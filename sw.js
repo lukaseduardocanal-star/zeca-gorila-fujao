@@ -1,6 +1,10 @@
-const V='zeca-v1';
+const V='zeca-v2';
 const CORE=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
-  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res&&res.ok&&new URL(e.request.url).origin===location.origin){const cp=res.clone();caches.open(V).then(c=>c.put(e.request,cp));}return res;}).catch(()=>caches.match('./index.html'))));});
+self.addEventListener('fetch',e=>{
+  const r=e.request;if(r.method!=='GET')return;
+  /* áudio e pedidos parciais (Range) passam direto: o cache atrapalha a música */
+  if(r.headers.has('range')||/\.(mp3|ogg|wav|m4a)(\?|$)/i.test(r.url)||r.destination==='audio')return;
+  e.respondWith(caches.match(r,{ignoreSearch:true}).then(c=>c||fetch(r).then(res=>{if(res&&res.status===200&&new URL(r.url).origin===location.origin){const cp=res.clone();caches.open(V).then(x=>x.put(r,cp)).catch(()=>{});}return res;}).catch(()=>caches.match('./index.html'))));
+});
