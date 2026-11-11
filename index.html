@@ -768,7 +768,9 @@ window.introOn=true;
     inStage.style.setProperty('--ar', (LW / LH).toFixed(4));
     logoReady = true;
   }
+  let logoFail = false;
   logoImg.onload = setupLogo;
+  logoImg.onerror = () => { logoFail = true; };
   logoImg.src = 'img/kubo6_logo.jpg';
 
   /* --- Sons da abertura (todos passam por um "bus" para poder cortar no pular) --- */
@@ -896,7 +898,8 @@ window.introOn=true;
   /* --- Controle da abertura --- */
   function runIntro() {
     if (introPhase !== 'gate') return;
-    if (!logoReady) { logoImg.onload = () => { setupLogo(); runIntro(); }; return; }
+    if (!logoReady && logoFail) { introPhase = 'out'; inGate.style.display = 'none'; revealMenu(); setTimeout(finishIntro, 450); return; }
+    if (!logoReady) { logoImg.onerror = () => { logoFail = true; runIntro(); }; logoImg.onload = () => { setupLogo(); runIntro(); }; return; }
     introPhase = 'run';
     try{for(const k in MPS){const m=MPS[k],mu=m.muted;m.muted=true;const p=m.play();const done=()=>{m.pause();m.currentTime=0;m.muted=muted;};if(p&&p.then)p.then(done).catch(()=>{});else done();}}catch(e){}
     try{AC();}catch(e){}
